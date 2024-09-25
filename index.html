@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Recognition with TensorFlow.js</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+</head>
+<body>
+    <h1>Reconocimiento de Imágenes</h1>
+    <input type="file" accept="image/*" onchange="loadImage(event)">
+    <img id="selected-image" width="224" height="224"/>
+    <button onclick="predict()">Predecir</button>
+    <div id="result"></div>
+
+    <script>
+        let model;
+
+        // Cargar el modelo de TensorFlow.js
+        async function loadModel() {
+            model = await tf.loadLayersModel('carpeta_salida/model.json');
+            console.log("Modelo cargado");
+        }
+
+        loadModel();
+
+        // Cargar la imagen seleccionada
+        function loadImage(event) {
+            const image = document.getElementById('selected-image');
+            image.src = URL.createObjectURL(event.target.files[0]);
+        }
+
+        // Predecir la clase de la imagen
+        async function predict() {
+            const image = document.getElementById('selected-image');
+            let tensor = tf.browser.fromPixels(image).resizeNearestNeighbor([32, 32]).toFloat().expandDims();
+            let predictions = await model.predict(tensor).data();
+            document.getElementById('result').innerHTML = `Predicción: ${predictions}`;
+        }
+    </script>
+</body>
+</html>
