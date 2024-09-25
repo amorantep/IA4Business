@@ -3,39 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Recognition with TensorFlow.js</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <title>Teachable Machine Image Model</title>
 </head>
 <body>
-    <h1>Reconocimiento de Imágenes</h1>
-    <input type="file" accept="image/*" onchange="loadImage(event)">
-    <img id="selected-image" width="224" height="224"/>
-    <button onclick="predict()">Predecir</button>
-    <div id="result"></div>
+    <h1>Teachable Machine Image Model</h1>
+    <button type="button" onclick="init()">Start</button>
+    <div id="webcam-container"></div>
+    <div id="label-container"></div>
 
-    <script>
-        let model;
+    <!-- Importar TensorFlow.js y la librería de Teachable Machine -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
-        // Cargar el modelo de TensorFlow.js
-        async function loadModel() {
-            model = await tf.loadLayersModel('carpeta_salida/model.json');
-            console.log("Modelo cargado");
+    <script type="text/javascript">
+        // Enlace al modelo exportado
+        const URL = "./my_model/";
+
+        let model, webcam, labelContainer, maxPredictions;
+
+        // Cargar el modelo de Teachable Machine y configurar la webcam
+        async function init() {
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+
+            // Cargar el modelo y los metadatos
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+
+            // Configuración de la webcam
+            const flip = true; // Si la webcam debe estar volteada
+            webcam = new tmImage.Webcam(200, 200, flip); // Ancho, alto, flip
+            await webcam.setup(); // Solicitar acceso a la webcam
+            await webcam.play();
+            window.requestAnimationFrame(loop);
+
+            // Añadir la webcam al contenedor
+            document.getElementById("webcam-container").appendChild(webcam.canvas);
+            labelContainer = document.getElementById("label-container");
+            for (let i = 0; i < maxPredictions; i++) { // Crear etiquetas para cada clase
+                labelContainer.appendChild(document.createElement("div"));
+            }
         }
 
-        loadModel();
-
-        // Cargar la imagen seleccionada
-        function loadImage(event) {
-            const image = document.getElementById('selected-image');
-            image.src = URL.createObjectURL(event.target.files[0]);
+        async function loop() {
+            webcam.update(); // Actualizar el frame de la webcam
+            await predict();
+            window.requestAnimationFrame(loop);
         }
 
-        // Predecir la clase de la imagen
+        // Realizar la predicción sobre el frame actual de la webcam
         async function predict() {
-            const image = document.getElementById('selected-image');
-            let tensor = tf.browser.fromPixels(image).resizeNearestNeighbor([32, 32]).toFloat().expandDims();
-            let predictions = await model.predict(tensor).data();
-            document.getElementById('result').innerHTML = `Predicción: ${predictions}`;
+            const prediction = await model.predict(webcam.canvas);
+            for (let i = 0; i < maxPredictions; i++) {
+                const classPrediction =
+                    prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+                labelContainer.childNodes[i].innerHTML = classPrediction;
+            }
         }
     </script>
 </body>
