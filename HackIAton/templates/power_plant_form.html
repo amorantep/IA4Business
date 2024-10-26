@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predicción de Potencia de Planta</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            max-width: 600px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="number"] {
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            grid-column: 1 / -1;
+            padding: 10px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #output {
+            grid-column: 1 / -1;
+            text-align: center;
+            font-size: 18px;
+            color: #333;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Predicción de Potencia de Planta</h1>
+    <form id="powerPlantForm">
+        <label for="AT">Temperatura Ambiente (°C):</label>
+        <input type="number" id="AT" name="AT" required step="0.1">
+
+        <label for="V">Presión Relativa (mbar):</label>
+        <input type="number" id="V" name="V" required step="0.1">
+
+        <label for="AP">Presión Absoluta (mbar):</label>
+        <input type="number" id="AP" name="AP" required step="0.1">
+
+        <label for="RH">Humedad Relativa (%):</label>
+        <input type="number" id="RH" name="RH" required step="0.1">
+
+        <button type="button" onclick="getPrediction()">Obtener Predicción</button>
+    </form>
+    <p id="output"></p>
+
+    <script>
+        async function getPrediction() {
+            const form = document.getElementById("powerPlantForm");
+            const formData = new FormData(form);
+            const data = {};
+
+            formData.forEach((value, key) => {
+                data[key] = parseFloat(value);
+            });
+
+            try {
+                const response = await fetch("/predict", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                document.getElementById("output").textContent = `Potencia Predicha: ${result.prediction.toFixed(2)} MW`;
+            } catch (error) {
+                document.getElementById("output").textContent = "Error al obtener la predicción.";
+                console.error("Error:", error);
+            }
+        }
+    </script>
+</body>
+</html>
